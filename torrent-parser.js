@@ -3,7 +3,6 @@
 import fs from 'node:fs';
 import bencode from 'bencode';
 import crypto from 'node:crypto';
-import bignum from 'bignum';
 
 // Omit encoding in readFileSync to get buffer as response
 // It returns tracker url as string
@@ -13,10 +12,14 @@ export const open = () =>
 export const size = (torrent) => {
   // Map for multiple file OR info.length for single file
   const size = torrent.info.files
-    ? torrent.info.files.map((file) => file.length).reduce((a, b) => a + b)
-    : torrent.info.length;
+    ? torrent.info.files
+        .map((file) => BigInt(file.length))
+        .reduce((a, b) => a + b)
+    : BigInt(torrent.info.length);
 
-  return bignum.toBuffer(size, { size: 8 });
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64BE(size);
+  return buf;
 };
 
 export const infoHash = (torrent) => {
